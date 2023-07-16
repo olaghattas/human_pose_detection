@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'pose_detection_node = detection.pose_detection:main'
+            'pose_detection_node = pose_detection.pose_detection:main'
         ],
     },
 )
