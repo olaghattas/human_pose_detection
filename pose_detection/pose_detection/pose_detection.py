@@ -4,14 +4,14 @@ import cv2
 import mediapipe as mp
 import rclpy
 from cv_bridge import CvBridge
-from geometry_msgs.msg import Point
+# from geometry_msgs.msg import Point
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 import math
 from detection_msgs.msg import PoseMsg
 # from rclpy.exceptions import ParameterNotDeclaredException
 from typing import Union
-
+from std_msgs.msg import Int32MultiArray
 
 class PoseDetection(Node):
     def __init__(self):
@@ -53,7 +53,7 @@ class PoseDetection(Node):
         image.flags.writeable = True
         # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
         # Extract landmarks
-        print('pose', results.pose_landmarks)
+        # print('pose', results.pose_landmarks)
 
         self.image = image
         if results.pose_landmarks is not None:
@@ -79,23 +79,25 @@ class PoseDetection(Node):
                 # ld_px_x, ld_px_y = self._normalized_to_pixel_coordinates(
                 #     landmarks[self.mpPose.PoseLandmark.RIGHT_SHOULDER.value].x,
                 #     landmarks[self.mpPose.PoseLandmark.RIGHT_SHOULDER.value].y, image_cols, image_rows)
-            landmark_px = [landmarks[self.mpPose.PoseLandmark.RIGHT_SHOULDER.value].x,
-                           landmarks[self.mpPose.PoseLandmark.RIGHT_SHOULDER.value].y]
+
+            ld_px_x, ld_px_y = _normalized_to_pixel_coordinates(
+                landmarks[self.mpPose.PoseLandmark.RIGHT_KNEE.value].x,
+                landmarks[self.mpPose.PoseLandmark.RIGHT_KNEE.value].y, image_cols, image_rows)
+            print(ld_px_x, ld_px_y)
+
             # Render the specific landmark points
             mp_drawing = mp.solutions.drawing_utils
             drawing_spec = mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2)
 
-            # point_msg = Point()
-            # point_msg.x = landmarks[self.mpPose.PoseLandmark.RIGHT_SHOULDER.value].x
-            # point_msg.y = landmarks[self.mpPose.PoseLandmark.RIGHT_SHOULDER.value].y
             msg = PoseMsg()
             msg.name = self.camera_name
 
-            point_msg = Point()
-            point_msg.x = landmark_px[0]
-            point_msg.y = landmark_px[1]
-            msg.coordinates = point_msg
+            point_msg = Int32MultiArray()
+            point_msg.data = [ld_px_x, ld_px_y]
+
+            msg.pixel_coordinates = point_msg
             # Publish the message
+            print('################# Knee #############', point_msg)
             self.pub_.publish(msg)
             # Setup status box
 
@@ -109,22 +111,22 @@ def plot(pose_detection):
             cv2.waitKey(100)
 
 
-# def _normalized_to_pixel_coordinates(
-#         normalized_x: float, normalized_y: float, image_width: int,
-#         image_height: int) -> Union[None, tuple[int, int]]:
-#     """Converts normalized value pair to pixel coordinates."""
-#
-#     # Checks if the float value is between 0 and 1.
-#     def is_valid_normalized_value(value: float) -> bool:
-#         return (value > 0 or math.isclose(0, value)) and (value < 1 or
-#                                                           math.isclose(1, value))
-#
-#     if not (is_valid_normalized_value(normalized_x) and
-#             is_valid_normalized_value(normalized_y)):
-#         return None
-#     x_px = min(math.floor(normalized_x * image_width), image_width - 1)
-#     y_px = min(math.floor(normalized_y * image_height), image_height - 1)
-#     return x_px, y_px
+def _normalized_to_pixel_coordinates(
+        normalized_x: float, normalized_y: float, image_width: int,
+        image_height: int) -> Union[None, tuple[int, int]]:
+    """Converts normalized value pair to pixel coordinates."""
+
+    # Checks if the float value is between 0 and 1.
+    def is_valid_normalized_value(value: float) -> bool:
+        return (value > 0 or math.isclose(0, value)) and (value < 1 or
+                                                          math.isclose(1, value))
+
+    if not (is_valid_normalized_value(normalized_x) and
+            is_valid_normalized_value(normalized_y)):
+        return None
+    x_px = min(math.floor(normalized_x * image_width), image_width - 1)
+    y_px = min(math.floor(normalized_y * image_height), image_height - 1)
+    return x_px, y_px
 
 
 def main(args=None):

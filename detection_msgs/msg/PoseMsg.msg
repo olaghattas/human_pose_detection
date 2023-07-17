@@ -1,2 +1,2 @@
 string name
-geometry_msgs/Point coordinates
+std_msgs/Int32MultiArray pixel_coordinates
