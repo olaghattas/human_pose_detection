@@ -1,2 +1,3 @@
 string name
-std_msgs/Int32MultiArray pixel_coordinates
+int32 pixel_coordinate_x
+int32 pixel_coordinate_y

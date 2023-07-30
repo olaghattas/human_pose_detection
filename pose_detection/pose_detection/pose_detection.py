@@ -11,7 +11,10 @@ import math
 from detection_msgs.msg import PoseMsg
 # from rclpy.exceptions import ParameterNotDeclaredException
 from typing import Union
-from std_msgs.msg import Int32MultiArray
+# from std_msgs.msg import Int32MultiArray
+import os
+# from PIL import Image
+
 
 class PoseDetection(Node):
     def __init__(self):
@@ -60,11 +63,14 @@ class PoseDetection(Node):
 
             landmarks = results.pose_landmarks.landmark
 
-            # Render detections
-
             self.mpDraw.draw_landmarks(self.image, results.pose_landmarks, self.mpPose.POSE_CONNECTIONS,
                                        self.mpDraw.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
                                        self.mpDraw.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
+
+            # self.mpDraw.draw_landmarks(self.image, results.pose_landmarks, self.mpPose.POSE_CONNECTIONS,
+            #                            self.mpDraw.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2),
+            #                            self.mpDraw.DrawingSpec(color=(245, 66, 230), thickness=2, circle_radius=2))
+
             _PRESENCE_THRESHOLD = 0.5
             _VISIBILITY_THRESHOLD = 0.5
             landmark_list = results.pose_landmarks
@@ -80,27 +86,53 @@ class PoseDetection(Node):
                 #     landmarks[self.mpPose.PoseLandmark.RIGHT_SHOULDER.value].x,
                 #     landmarks[self.mpPose.PoseLandmark.RIGHT_SHOULDER.value].y, image_cols, image_rows)
 
-            ld_px_x, ld_px_y = _normalized_to_pixel_coordinates(
+            print(landmarks[self.mpPose.PoseLandmark.RIGHT_KNEE.value].x, landmarks[self.mpPose.PoseLandmark.RIGHT_KNEE.value].y)
+            normalized_coords = _normalized_to_pixel_coordinates(
                 landmarks[self.mpPose.PoseLandmark.RIGHT_KNEE.value].x,
                 landmarks[self.mpPose.PoseLandmark.RIGHT_KNEE.value].y, image_cols, image_rows)
-            print(ld_px_x, ld_px_y)
 
-            # Render the specific landmark points
-            mp_drawing = mp.solutions.drawing_utils
-            drawing_spec = mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2)
+            if normalized_coords is not None:
+                ld_px_x, ld_px_y = normalized_coords
+                print(ld_px_x, ld_px_y)
+                center_coordinates = (938, 1787)
 
-            msg = PoseMsg()
-            msg.name = self.camera_name
+                # Radius of circle
+                radius = 2
 
-            point_msg = Int32MultiArray()
-            point_msg.data = [ld_px_x, ld_px_y]
+                # Blue color in BGR
+                color = (255, 255, 0)
 
-            msg.pixel_coordinates = point_msg
-            # Publish the message
-            print('################# Knee #############', point_msg)
-            self.pub_.publish(msg)
-            # Setup status box
+                # Line thickness
+                thickness = 2
 
+                cv2.circle(self.image, center_coordinates, radius,
+                           color, thickness)
+                # Render the specific landmark points
+                mp_drawing = mp.solutions.drawing_utils
+                drawing_spec = mp_drawing.DrawingSpec(color=(245, 117, 66), thickness=2, circle_radius=2)
+
+                msg = PoseMsg()
+                msg.name = self.camera_name
+                msg.pixel_coordinate_x = ld_px_x
+                msg.pixel_coordinate_y = ld_px_y
+                # Publish the message
+                print('################# Knee #############', ld_px_x, ld_px_y)
+                self.pub_.publish(msg)
+
+                # FOR DEBUG
+
+                save_image(ld_px_x, ld_px_y, self.image)
+
+            else:
+                print("Invalid normalized coordinates")
+
+def save_image(lx : int, ly, curr_image):
+    path_img = os.environ["HOME"] + "/smart_home/src/smart-home/external/human_pose_detection/pose_detection/pose_images_for_debug/"
+    img_name = str(lx) + '_' + str(ly) + '.png'
+    path = path_img + img_name
+    # curr_image = Image.fromarray(curr_image)
+    # curr_image.save(path)
+    cv2.imwrite(path, curr_image)
 
 def plot(pose_detection):
     while pose_detection.plotting:
