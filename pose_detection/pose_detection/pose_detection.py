@@ -127,7 +127,7 @@ class PoseDetection(Node):
                 print("Invalid normalized coordinates")
 
 def save_image(lx : int, ly, curr_image):
-    path_img = os.environ["HOME"] + "/smart_home/src/smart-home/external/human_pose_detection/pose_detection/pose_images_for_debug/"
+    path_img = os.environ["HOME"] + "/smart-home/src/smart-home/external/human_pose_detection/pose_detection/pose_images_for_debug/"
     img_name = str(lx) + '_' + str(ly) + '.png'
     path = path_img + img_name
     # curr_image = Image.fromarray(curr_image)
