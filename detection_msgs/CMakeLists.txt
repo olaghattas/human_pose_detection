@@ -8,6 +8,7 @@ find_package(std_msgs REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
         "msg/PoseMsg.msg"
+        "msg/DoorStatus.msg"
         DEPENDENCIES
         std_msgs
         builtin_interfaces
